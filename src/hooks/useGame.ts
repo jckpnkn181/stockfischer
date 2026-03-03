@@ -1,0 +1,230 @@
+import { useState, useCallback, useRef } from 'react'
+import type { Screen, BotConfig, GameState, GameResult, GameOutcome, GameReason, MoveRecord } from '../types'
+import { generateChess960Fen, randomPositionId } from '../chess960/positions'
+import { createGame, makeMove, getGameState } from '../chess960/gameLogic'
+import { useStockfish } from './useStockfish'
+import type { Chess } from 'chessops/chess'
+import { makeSquare, parseSquare } from 'chessops'
+
+export function useGame() {
+  const [screen, setScreen] = useState<Screen>('home')
+  const [selectedBot, setSelectedBot] = useState<BotConfig | null>(null)
+  const [positionId, setPositionId] = useState<number>(randomPositionId())
+  const [gameState, setGameState] = useState<GameState | null>(null)
+  const [gameResult, setGameResult] = useState<GameResult | null>(null)
+
+  const posRef = useRef<Chess | null>(null)
+  const historyRef = useRef<MoveRecord[]>([])
+  const initialFenRef = useRef<string>('')
+  const uciMovesRef = useRef<string[]>([])
+
+  const { status: engineStatus, isThinking, configure, getMove, stopThinking } = useStockfish()
+
+  const updateGameState = useCallback(() => {
+    if (!posRef.current) return
+    const state = getGameState(
+      posRef.current,
+      historyRef.current,
+      positionId,
+      initialFenRef.current
+    )
+    setGameState(state)
+    return state
+  }, [positionId])
+
+  const checkGameOver = useCallback(
+    (state: GameState) => {
+      if (!state.isGameOver || !selectedBot) return false
+
+      let outcome: GameOutcome
+      let reason: GameReason
+
+      if (state.isCheckmate) {
+        outcome = state.turn === 'white' ? 'loss' : 'win'
+        reason = 'checkmate'
+      } else if (state.isStalemate) {
+        outcome = 'draw'
+        reason = 'stalemate'
+      } else {
+        outcome = 'draw'
+        reason = 'insufficient_material'
+      }
+
+      setGameResult({
+        outcome,
+        reason,
+        positionId,
+        bot: selectedBot,
+        moveCount: Math.ceil(historyRef.current.length / 2),
+      })
+      setScreen('result')
+      return true
+    },
+    [selectedBot, positionId]
+  )
+
+  const engineMove = useCallback(async () => {
+    if (!posRef.current || !selectedBot) return
+
+    try {
+      const bestMove = await getMove(
+        initialFenRef.current,
+        uciMovesRef.current,
+        selectedBot.depth,
+        selectedBot.moveTime
+      )
+
+      if (!posRef.current) return
+
+      // Parse UCI move (e.g., "e2e4" or "e7e8q")
+      const from = bestMove.slice(0, 2)
+      const to = bestMove.slice(2, 4)
+      const promoChar = bestMove[4]
+      const promoMap: Record<string, string> = {
+        q: 'queen',
+        r: 'rook',
+        b: 'bishop',
+        n: 'knight',
+      }
+      const promotion = promoChar ? promoMap[promoChar] : undefined
+
+      // For Chess960 castling: engine may send king-to-rook UCI moves
+      // Try direct move first, then handle castling
+      let result = makeMove(posRef.current, from, to, promotion as 'queen' | 'rook' | 'bishop' | 'knight' | undefined)
+
+      if (!result) {
+        // Try interpreting as castling: find king square and rook square
+        const fromSq = parseSquare(from)
+        const toSq = parseSquare(to)
+        if (fromSq !== undefined && toSq !== undefined) {
+          const board = posRef.current.board
+          const piece = board.get(fromSq)
+          if (piece?.role === 'king') {
+            // King moving to rook = castling in Chess960
+            // chessops expects king-to-rook notation
+            result = makeMove(posRef.current, from, to)
+          }
+        }
+      }
+
+      if (result) {
+        posRef.current = result.pos
+        historyRef.current = [...historyRef.current, { san: result.san, uci: result.uci, fen: result.fen }]
+        uciMovesRef.current = [...uciMovesRef.current, bestMove]
+        const state = updateGameState()
+        if (state) checkGameOver(state)
+      }
+    } catch (err) {
+      console.error('Engine move failed:', err)
+    }
+  }, [selectedBot, getMove, updateGameState, checkGameOver])
+
+  const startGame = useCallback(
+    (bot: BotConfig, posId?: number) => {
+      const id = posId ?? randomPositionId()
+      setPositionId(id)
+      setSelectedBot(bot)
+
+      const fen = generateChess960Fen(id)
+      initialFenRef.current = fen
+      historyRef.current = []
+      uciMovesRef.current = []
+
+      const pos = createGame(fen)
+      posRef.current = pos
+
+      configure(bot.skillLevel)
+
+      const state = getGameState(pos, [], id, fen)
+      setGameState(state)
+      setGameResult(null)
+      setScreen('game')
+    },
+    [configure]
+  )
+
+  const playerMove = useCallback(
+    (from: string, to: string, promotion?: string): boolean => {
+      if (!posRef.current || gameState?.turn !== 'white') return false
+
+      const result = makeMove(
+        posRef.current,
+        from,
+        to,
+        promotion as 'queen' | 'rook' | 'bishop' | 'knight' | undefined
+      )
+      if (!result) return false
+
+      posRef.current = result.pos
+      historyRef.current = [...historyRef.current, { san: result.san, uci: result.uci, fen: result.fen }]
+      uciMovesRef.current = [...uciMovesRef.current, result.uci]
+
+      const state = updateGameState()
+      if (state && !checkGameOver(state)) {
+        // Trigger engine move
+        setTimeout(() => engineMove(), 100)
+      }
+
+      return true
+    },
+    [gameState?.turn, updateGameState, checkGameOver, engineMove]
+  )
+
+  const resign = useCallback(() => {
+    if (!selectedBot) return
+
+    stopThinking()
+    setGameResult({
+      outcome: 'loss',
+      reason: 'resignation',
+      positionId,
+      bot: selectedBot,
+      moveCount: Math.ceil(historyRef.current.length / 2),
+    })
+    setScreen('result')
+  }, [selectedBot, positionId, stopThinking])
+
+  const playAgain = useCallback(() => {
+    if (selectedBot) {
+      startGame(selectedBot)
+    }
+  }, [selectedBot, startGame])
+
+  const goHome = useCallback(() => {
+    stopThinking()
+    posRef.current = null
+    historyRef.current = []
+    uciMovesRef.current = []
+    setGameState(null)
+    setGameResult(null)
+    setScreen('home')
+  }, [stopThinking])
+
+  const findKingSquare = useCallback((): string | undefined => {
+    if (!posRef.current || !gameState?.isCheck) return undefined
+    const board = posRef.current.board
+    const kingSet = board.king.intersect(board[posRef.current.turn])
+    for (const sq of kingSet) {
+      return makeSquare(sq)
+    }
+    return undefined
+  }, [gameState?.isCheck])
+
+  return {
+    screen,
+    selectedBot,
+    setSelectedBot,
+    positionId,
+    setPositionId,
+    gameState,
+    gameResult,
+    engineStatus,
+    isThinking,
+    startGame,
+    playerMove,
+    resign,
+    playAgain,
+    goHome,
+    findKingSquare,
+  }
+}
