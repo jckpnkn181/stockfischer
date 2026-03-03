@@ -7,16 +7,18 @@ export function useStockfish() {
   const [isThinking, setIsThinking] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
     const engine = new StockfishEngine()
     engineRef.current = engine
 
     engine.init().then(() => {
-      setStatus('ready')
+      if (!cancelled) setStatus('ready')
     }).catch(() => {
-      setStatus('error')
+      if (!cancelled) setStatus('error')
     })
 
     return () => {
+      cancelled = true
       engine.destroy()
       engineRef.current = null
     }

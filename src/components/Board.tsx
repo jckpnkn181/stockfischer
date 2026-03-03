@@ -170,15 +170,17 @@ export default function Board({
   return (
     <div className="relative w-full max-w-[min(100vw,80vh)] mx-auto">
       <Chessboard
-        position={fen}
-        boardOrientation={orientation}
-        onPieceDrop={handlePieceDrop}
-        onSquareClick={handleSquareClick}
-        squareStyles={customSquareStyles}
-        darkSquareStyle={{ backgroundColor: '#769656' }}
-        lightSquareStyle={{ backgroundColor: '#eeeed2' }}
-        animationDurationInMs={200}
-        allowDragging={isPlayerTurn}
+        options={{
+          position: fen,
+          boardOrientation: orientation,
+          onPieceDrop: handlePieceDrop,
+          onSquareClick: handleSquareClick,
+          squareStyles: customSquareStyles,
+          darkSquareStyle: { backgroundColor: '#769656' },
+          lightSquareStyle: { backgroundColor: '#eeeed2' },
+          animationDurationInMs: 200,
+          allowDragging: isPlayerTurn,
+        }}
       />
 
       {/* Promotion Dialog */}
