@@ -4,7 +4,7 @@ import { generateChess960Fen, randomPositionId } from '../chess960/positions'
 import { createGame, makeMove, getGameState } from '../chess960/gameLogic'
 import { useStockfish } from './useStockfish'
 import type { Chess } from 'chessops/chess'
-import { makeSquare, parseSquare } from 'chessops'
+import { makeSquare } from 'chessops'
 
 export function useGame() {
   const [screen, setScreen] = useState<Screen>('home')
@@ -90,22 +90,7 @@ export function useGame() {
 
       // For Chess960 castling: engine may send king-to-rook UCI moves
       // Try direct move first, then handle castling
-      let result = makeMove(posRef.current, from, to, promotion as 'queen' | 'rook' | 'bishop' | 'knight' | undefined)
-
-      if (!result) {
-        // Try interpreting as castling: find king square and rook square
-        const fromSq = parseSquare(from)
-        const toSq = parseSquare(to)
-        if (fromSq !== undefined && toSq !== undefined) {
-          const board = posRef.current.board
-          const piece = board.get(fromSq)
-          if (piece?.role === 'king') {
-            // King moving to rook = castling in Chess960
-            // chessops expects king-to-rook notation
-            result = makeMove(posRef.current, from, to)
-          }
-        }
-      }
+      const result = makeMove(posRef.current, from, to, promotion as 'queen' | 'rook' | 'bishop' | 'knight' | undefined)
 
       if (result) {
         posRef.current = result.pos

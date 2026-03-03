@@ -42,7 +42,34 @@ export function makeMove(
   }
 
   // Check if it's a legal move
-  if (!pos.isLegal(move)) return null
+  if (!pos.isLegal(move)) {
+    // Chess960: king dragged to castling destination (g1/c1/g8/c8) instead of rook's square
+    const piece = pos.board.get(fromSq)
+    if (piece?.role === 'king') {
+      const toFile = toSq & 7
+      const toRank = toSq >> 3
+      const fromRank = fromSq >> 3
+      if (toRank === fromRank && (toFile === 6 || toFile === 2)) {
+        const isKingside = toFile === 6
+        const kingFile = fromSq & 7
+        for (const destSq of pos.dests(fromSq)) {
+          const destPiece = pos.board.get(destSq)
+          if (destPiece?.role === 'rook' && destPiece.color === piece.color) {
+            const rookFile = destSq & 7
+            if ((isKingside && rookFile > kingFile) || (!isKingside && rookFile < kingFile)) {
+              const castleMove = { from: fromSq, to: destSq }
+              const san = makeSan(pos, castleMove)
+              const uci = makeSquare(fromSq) + makeSquare(destSq)
+              const newPos = pos.clone()
+              newPos.play(castleMove)
+              return { pos: newPos, san, uci, fen: makeFen(newPos.toSetup()) }
+            }
+          }
+        }
+      }
+    }
+    return null
+  }
 
   const san = makeSan(pos, move)
   const uci = makeSquare(fromSq) + makeSquare(toSq) + (promotion ? promotion[0] : '')
