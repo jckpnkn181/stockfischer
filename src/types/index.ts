@@ -6,9 +6,9 @@ export interface BotConfig {
   rating: number
   description: string
   avatar: string
-  skillLevel: number
   depth: number
   moveTime: number
+  skillLevel?: number
 }
 
 export interface MoveRecord {

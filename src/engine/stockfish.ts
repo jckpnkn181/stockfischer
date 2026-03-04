@@ -89,11 +89,21 @@ export class StockfishEngine {
   }
 
   /**
-   * Configure bot difficulty (Skill Level).
+   * Configure bot difficulty.
+   * Uses Skill Level for bots below UCI_Elo minimum (1320),
+   * UCI_Elo for the rest.
    */
-  configure(skillLevel: number): void {
+  configure(rating: number, skillLevel?: number): void {
     if (!this.worker) return
-    this.send(buildSetOptionCommand('Skill Level', skillLevel))
+    if (skillLevel !== undefined) {
+      this.send(buildSetOptionCommand('UCI_LimitStrength', 'false'))
+      this.send(buildSetOptionCommand('Skill Level', skillLevel))
+    } else {
+      const clampedElo = Math.max(1320, Math.min(3190, rating))
+      this.send(buildSetOptionCommand('Skill Level', 20))
+      this.send(buildSetOptionCommand('UCI_LimitStrength', 'true'))
+      this.send(buildSetOptionCommand('UCI_Elo', clampedElo))
+    }
   }
 
   /**

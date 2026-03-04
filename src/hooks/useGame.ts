@@ -118,7 +118,7 @@ export function useGame() {
       const pos = createGame(fen)
       posRef.current = pos
 
-      configure(bot.skillLevel)
+      configure(bot.rating, bot.skillLevel)
 
       const state = getGameState(pos, [], id, fen)
       setGameState(state)

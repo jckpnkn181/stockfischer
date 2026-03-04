@@ -24,8 +24,8 @@ export function useStockfish() {
     }
   }, [])
 
-  const configure = useCallback((skillLevel: number) => {
-    engineRef.current?.configure(skillLevel)
+  const configure = useCallback((rating: number, skillLevel?: number) => {
+    engineRef.current?.configure(rating, skillLevel)
   }, [])
 
   const getMove = useCallback(async (
