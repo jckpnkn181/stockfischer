@@ -177,7 +177,7 @@ export default function Board({
           onPieceDrop: handlePieceDrop,
           onSquareClick: handleSquareClick,
           squareStyles: customSquareStyles,
-          darkSquareStyle: { backgroundColor: '#769656' },
+          darkSquareStyle: { backgroundColor: '#4d7a9a' },
           lightSquareStyle: { backgroundColor: '#eeeed2' },
           animationDurationInMs: 200,
           allowDragging: isPlayerTurn,
