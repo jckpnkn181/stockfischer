@@ -133,6 +133,7 @@ export default function Board({
     ({
       sourceSquare,
       targetSquare,
+      piece,
     }: {
       piece: { pieceType: string }
       sourceSquare: string
@@ -140,16 +141,31 @@ export default function Board({
     }): boolean => {
       if (!isPlayerTurn || !targetSquare) return false
 
+      // Guard: piece dropped on same square
+      if (sourceSquare === targetSquare) return false
+
+      // Validate against legal moves (matches click handler)
+      const movesForSquare = legalMoves.get(sourceSquare)
+      if (!movesForSquare?.includes(targetSquare)) {
+        // Allow Chess960 castling: king dragged to c/g file (makeMove has fallback)
+        const isKing = piece.pieceType === 'wK' || piece.pieceType === 'bK'
+        const targetFile = targetSquare.charCodeAt(0) - 'a'.charCodeAt(0)
+        const sameRank = sourceSquare[1] === targetSquare[1]
+        if (!isKing || !sameRank || (targetFile !== 2 && targetFile !== 6)) {
+          return false
+        }
+      }
+
       if (isPromotionMove(sourceSquare, targetSquare)) {
         setPromotionMove({ from: sourceSquare, to: targetSquare })
-        return false // Don't apply yet, wait for promotion choice
+        return false
       }
 
       const success = onMove(sourceSquare, targetSquare)
       setSelectedSquare(null)
       return success
     },
-    [isPlayerTurn, onMove, isPromotionMove]
+    [isPlayerTurn, onMove, isPromotionMove, legalMoves]
   )
 
   const handlePromotion = useCallback(
@@ -175,6 +191,7 @@ export default function Board({
           position: fen,
           boardOrientation: orientation,
           onPieceDrop: handlePieceDrop,
+          onPieceDrag: useCallback(() => setSelectedSquare(null), []),
           onSquareClick: handleSquareClick,
           squareStyles: customSquareStyles,
           darkSquareStyle: { backgroundColor: '#4d7a9a' },

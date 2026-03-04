@@ -5,7 +5,6 @@ import { createGame, makeMove, getGameState } from '../chess960/gameLogic'
 import { useStockfish } from './useStockfish'
 import type { Chess } from 'chessops/chess'
 import { makeSquare } from 'chessops'
-import { makeFen } from 'chessops/fen'
 
 export function useGame() {
   const [screen, setScreen] = useState<Screen>('home')
@@ -106,29 +105,7 @@ export function useGame() {
         const state = updateGameState()
         if (state) checkGameOver(state)
       } else {
-        // Fallback: retry with current FEN (without move list)
-        console.warn(`Move ${bestMove} failed, retrying with FEN...`)
-        const currentFen = makeFen(posRef.current.toSetup())
-        const retryMove = await getMove(currentFen, [], selectedBot.depth, selectedBot.moveTime)
-
-        if (!retryMove || retryMove === '(none)' || !posRef.current) return
-
-        const rf = retryMove.slice(0, 2)
-        const rt = retryMove.slice(2, 4)
-        const rpc = retryMove[4]
-        const rpromo = rpc ? promoMap[rpc] : undefined
-        const retryResult = makeMove(posRef.current, rf, rt, rpromo as 'queen' | 'rook' | 'bishop' | 'knight' | undefined)
-
-        if (retryResult) {
-          posRef.current = retryResult.pos
-          historyRef.current = [...historyRef.current, { san: retryResult.san, uci: retryResult.uci, fen: retryResult.fen }]
-          // Rebuild uciMovesRef from history
-          uciMovesRef.current = historyRef.current.map(m => m.uci)
-          const state = updateGameState()
-          if (state) checkGameOver(state)
-        } else {
-          console.error(`Retry also failed: ${retryMove}, FEN: ${currentFen}`)
-        }
+        console.error(`Engine move failed: ${bestMove}`)
       }
     } catch (err) {
       console.error('Engine move failed:', err)

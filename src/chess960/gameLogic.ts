@@ -34,6 +34,7 @@ export function makeMove(
   const fromSq = parseSquare(from)
   const toSq = parseSquare(to)
   if (fromSq === undefined || toSq === undefined) return null
+  if (fromSq === toSq) return null
 
   const move = { from: fromSq, to: toSq, promotion } as {
     from: Square
