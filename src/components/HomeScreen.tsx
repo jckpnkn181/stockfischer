@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { BotConfig } from '../types'
+import type { EngineStatus } from '../engine/stockfish'
 import { bots } from '../bots/botConfig'
 import { randomPositionId } from '../chess960/positions'
 import BotCard from './BotCard'
@@ -10,7 +11,7 @@ interface HomeScreenProps {
   positionId: number
   onSetPositionId: (id: number) => void
   onStartGame: (bot: BotConfig, posId: number) => void
-  engineReady: boolean
+  engineStatus: EngineStatus
 }
 
 export default function HomeScreen({
@@ -19,7 +20,7 @@ export default function HomeScreen({
   positionId,
   onSetPositionId,
   onStartGame,
-  engineReady,
+  engineStatus,
 }: HomeScreenProps) {
   const [inputValue, setInputValue] = useState(positionId.toString())
 
@@ -89,10 +90,18 @@ export default function HomeScreen({
       <div className="px-4 pb-8 mt-auto">
         <button
           onClick={handleStart}
-          disabled={!selectedBot || !engineReady}
-          className="w-full py-3.5 rounded-xl font-bold text-lg transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 bg-[var(--accent-green)] text-white hover:bg-[var(--accent-green-hover)]"
+          disabled={!selectedBot || engineStatus !== 'ready'}
+          className={`w-full py-3.5 rounded-xl font-bold text-lg transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 ${
+            engineStatus === 'error'
+              ? 'bg-red-600 text-white'
+              : 'bg-[var(--accent-green)] text-white hover:bg-[var(--accent-green-hover)]'
+          }`}
         >
-          {!engineReady ? 'Laddar motor...' : 'Spela'}
+          {engineStatus === 'error'
+            ? 'Motorn kunde inte laddas'
+            : engineStatus !== 'ready'
+              ? 'Laddar motor...'
+              : 'Spela'}
         </button>
       </div>
     </div>

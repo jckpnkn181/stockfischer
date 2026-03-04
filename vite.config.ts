@@ -10,8 +10,6 @@ export default defineConfig({
     tailwindcss(),
     viteStaticCopy({
       targets: [
-        { src: 'node_modules/stockfish/bin/stockfish-18.js', dest: 'stockfish' },
-        { src: 'node_modules/stockfish/bin/stockfish-18.wasm', dest: 'stockfish' },
         { src: 'node_modules/stockfish/bin/stockfish-18-lite.js', dest: 'stockfish' },
         { src: 'node_modules/stockfish/bin/stockfish-18-lite.wasm', dest: 'stockfish' },
         { src: 'node_modules/stockfish/bin/stockfish-18-lite-single.js', dest: 'stockfish' },
@@ -51,20 +49,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg}'],
         globIgnores: ['stockfish/**'],
-        maximumFileSizeToCacheInBytes: 150 * 1024 * 1024,
-        runtimeCaching: [
-          {
-            urlPattern: /stockfish\/.*/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'stockfish-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365,
-              },
-            },
-          },
-        ],
+        skipWaiting: true,
       },
     }),
   ],

@@ -32,7 +32,7 @@ function App() {
           positionId={positionId}
           onSetPositionId={setPositionId}
           onStartGame={startGame}
-          engineReady={engineStatus === 'ready'}
+          engineStatus={engineStatus}
         />
       )}
 

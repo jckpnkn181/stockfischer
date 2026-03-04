@@ -1,4 +1,4 @@
-import { detectBestEngine, type EngineInfo } from './engineLoader'
+import { detectBestEngine, getSingleThreadEngine, type EngineInfo } from './engineLoader'
 import {
   parseUciMessage,
   buildPositionCommand,
@@ -12,54 +12,80 @@ export type EngineStatus = 'idle' | 'initializing' | 'ready' | 'thinking' | 'err
 export class StockfishEngine {
   private worker: Worker | null = null
   private messageHandlers: Array<(msg: UciMessage) => void> = []
-  private engineInfo: EngineInfo | null = null
   status: EngineStatus = 'idle'
 
   /**
    * Initialize the engine: create Worker, UCI handshake, enable Chess960.
+   * Falls back from multi-threaded (lite) to single-thread on failure.
    */
   async init(): Promise<void> {
     this.status = 'initializing'
 
+    const primary = detectBestEngine()
+
     try {
-      this.engineInfo = detectBestEngine()
-      this.worker = new Worker(this.engineInfo.jsFile)
-
-      this.worker.onmessage = (e: MessageEvent) => {
-        const line = typeof e.data === 'string' ? e.data : String(e.data)
-        const msg = parseUciMessage(line)
-        for (const handler of this.messageHandlers) {
-          handler(msg)
-        }
-      }
-
-      this.worker.onerror = () => {
-        this.status = 'error'
-      }
-
-      // UCI handshake
-      this.send('uci')
-      await this.waitFor((msg) => msg.type === 'uciok')
-
-      // Enable Chess960
-      this.send(buildSetOptionCommand('UCI_Chess960', 'true'))
-
-      // Set threads if multi-threaded
-      if (this.engineInfo.threads > 1) {
-        this.send(buildSetOptionCommand('Threads', this.engineInfo.threads))
-      }
-
-      // Small hash table for mobile friendliness
-      this.send(buildSetOptionCommand('Hash', 32))
-
-      this.send('isready')
-      await this.waitFor((msg) => msg.type === 'readyok')
-
-      this.status = 'ready'
+      await this.initWithEngine(primary)
+      return
     } catch {
-      this.status = 'error'
-      throw new Error('Failed to initialize Stockfish engine')
+      this.cleanupWorker()
     }
+
+    // Fallback: if primary was multi-threaded, try single-thread
+    if (primary.variant === 'lite') {
+      try {
+        await this.initWithEngine(getSingleThreadEngine())
+        return
+      } catch {
+        this.cleanupWorker()
+      }
+    }
+
+    this.status = 'error'
+    throw new Error('Failed to initialize Stockfish engine')
+  }
+
+  private async initWithEngine(info: EngineInfo): Promise<void> {
+    this.worker = new Worker(info.jsFile)
+
+    this.worker.onmessage = (e: MessageEvent) => {
+      const line = typeof e.data === 'string' ? e.data : String(e.data)
+      const msg = parseUciMessage(line)
+      for (const handler of this.messageHandlers) {
+        handler(msg)
+      }
+    }
+
+    this.worker.onerror = () => {
+      this.status = 'error'
+    }
+
+    // UCI handshake
+    this.send('uci')
+    await this.waitFor((msg) => msg.type === 'uciok')
+
+    // Enable Chess960
+    this.send(buildSetOptionCommand('UCI_Chess960', 'true'))
+
+    // Set threads if multi-threaded
+    if (info.threads > 1) {
+      this.send(buildSetOptionCommand('Threads', info.threads))
+    }
+
+    // Small hash table for mobile friendliness
+    this.send(buildSetOptionCommand('Hash', 32))
+
+    this.send('isready')
+    await this.waitFor((msg) => msg.type === 'readyok')
+
+    this.status = 'ready'
+  }
+
+  private cleanupWorker(): void {
+    if (this.worker) {
+      this.worker.terminate()
+      this.worker = null
+    }
+    this.messageHandlers = []
   }
 
   /**
