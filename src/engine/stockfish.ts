@@ -95,6 +95,7 @@ export class StockfishEngine {
    */
   configure(rating: number, skillLevel?: number): void {
     if (!this.worker) return
+    this.send('ucinewgame')
     if (skillLevel !== undefined) {
       this.send(buildSetOptionCommand('UCI_LimitStrength', 'false'))
       this.send(buildSetOptionCommand('Skill Level', skillLevel))
@@ -122,6 +123,8 @@ export class StockfishEngine {
     this.status = 'thinking'
 
     this.send(buildPositionCommand(fen, moves))
+    this.send('isready')
+    await this.waitFor((msg) => msg.type === 'readyok')
     this.send(buildGoCommand(depth, moveTime))
 
     const result = await this.waitFor((msg) => msg.type === 'bestmove')

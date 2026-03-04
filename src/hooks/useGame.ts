@@ -5,6 +5,7 @@ import { createGame, makeMove, getGameState } from '../chess960/gameLogic'
 import { useStockfish } from './useStockfish'
 import type { Chess } from 'chessops/chess'
 import { makeSquare } from 'chessops'
+import { makeFen } from 'chessops/fen'
 
 export function useGame() {
   const [screen, setScreen] = useState<Screen>('home')
@@ -76,6 +77,12 @@ export function useGame() {
 
       if (!posRef.current) return
 
+      // Handle bestmove (none)
+      if (!bestMove || bestMove === '(none)') {
+        console.error('Engine returned no move')
+        return
+      }
+
       // Parse UCI move (e.g., "e2e4" or "e7e8q")
       const from = bestMove.slice(0, 2)
       const to = bestMove.slice(2, 4)
@@ -95,9 +102,33 @@ export function useGame() {
       if (result) {
         posRef.current = result.pos
         historyRef.current = [...historyRef.current, { san: result.san, uci: result.uci, fen: result.fen }]
-        uciMovesRef.current = [...uciMovesRef.current, bestMove]
+        uciMovesRef.current = [...uciMovesRef.current, result.uci]
         const state = updateGameState()
         if (state) checkGameOver(state)
+      } else {
+        // Fallback: retry with current FEN (without move list)
+        console.warn(`Move ${bestMove} failed, retrying with FEN...`)
+        const currentFen = makeFen(posRef.current.toSetup())
+        const retryMove = await getMove(currentFen, [], selectedBot.depth, selectedBot.moveTime)
+
+        if (!retryMove || retryMove === '(none)' || !posRef.current) return
+
+        const rf = retryMove.slice(0, 2)
+        const rt = retryMove.slice(2, 4)
+        const rpc = retryMove[4]
+        const rpromo = rpc ? promoMap[rpc] : undefined
+        const retryResult = makeMove(posRef.current, rf, rt, rpromo as 'queen' | 'rook' | 'bishop' | 'knight' | undefined)
+
+        if (retryResult) {
+          posRef.current = retryResult.pos
+          historyRef.current = [...historyRef.current, { san: retryResult.san, uci: retryResult.uci, fen: retryResult.fen }]
+          // Rebuild uciMovesRef from history
+          uciMovesRef.current = historyRef.current.map(m => m.uci)
+          const state = updateGameState()
+          if (state) checkGameOver(state)
+        } else {
+          console.error(`Retry also failed: ${retryMove}, FEN: ${currentFen}`)
+        }
       }
     } catch (err) {
       console.error('Engine move failed:', err)
