@@ -11,14 +11,21 @@ import bR from '../assets/kiwen-suwi/black-rook.svg'
 import bQ from '../assets/kiwen-suwi/black-queen.svg'
 import bK from '../assets/kiwen-suwi/black-king.svg'
 
-const pieces: Record<string, string> = {
+// react-chessboard uses keys like wP, wN, bK etc.
+const boardPieces: Record<string, string> = {
+  wP, wN, wB, wR, wQ, wK,
+  bP, bN, bB, bR, bQ, bK,
+}
+
+// FEN character → SVG url (for PieceImg)
+const fenPieces: Record<string, string> = {
   P: wP, N: wN, B: wB, R: wR, Q: wQ, K: wK,
   p: bP, n: bN, b: bB, r: bR, q: bQ, k: bK,
 }
 
 export const kiwenSuwiPieces: Record<string, () => React.JSX.Element> =
   Object.fromEntries(
-    Object.entries(pieces).map(([key, src]) => [
+    Object.entries(boardPieces).map(([key, src]) => [
       key,
       () => (
         <img
@@ -31,7 +38,7 @@ export const kiwenSuwiPieces: Record<string, () => React.JSX.Element> =
   )
 
 export function PieceImg({ piece, size = '1rem' }: { piece: string; size?: string }) {
-  const src = pieces[piece]
+  const src = fenPieces[piece]
   if (!src) return null
   return <img src={src} alt={piece} style={{ width: size, height: size, objectFit: 'contain' }} />
 }
