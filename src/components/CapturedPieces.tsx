@@ -1,7 +1,4 @@
-const PIECE_SYMBOLS: Record<string, string> = {
-  P: '♙', N: '♘', B: '♗', R: '♖', Q: '♕',
-  p: '♟', n: '♞', b: '♝', r: '♜', q: '♛',
-}
+import { PieceImg } from '../pieces/kiwenSuwi'
 
 const PIECE_VALUES: Record<string, number> = {
   p: 1, P: 1, n: 3, N: 3, b: 3, B: 3, r: 5, R: 5, q: 9, Q: 9,
@@ -23,7 +20,7 @@ export default function CapturedPieces({ pieces, color, advantage }: CapturedPie
       <div className="flex gap-0.5">
         {sorted.map((piece, i) => (
           <span key={i} className="text-base leading-none">
-            {PIECE_SYMBOLS[piece] || piece}
+            <PieceImg piece={piece} size="1.1rem" />
           </span>
         ))}
       </div>

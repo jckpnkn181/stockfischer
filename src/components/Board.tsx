@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Chessboard } from 'react-chessboard'
+import { kiwenSuwiPieces, PieceImg } from '../pieces/kiwenSuwi'
 
 interface BoardProps {
   fen: string
@@ -180,6 +181,7 @@ export default function Board({
           lightSquareStyle: { backgroundColor: '#eeeed2' },
           animationDurationInMs: 200,
           allowDragging: isPlayerTurn,
+          pieces: kiwenSuwiPieces,
         }}
       />
 
@@ -193,7 +195,7 @@ export default function Board({
                 onClick={() => handlePromotion(piece)}
                 className="w-16 h-16 flex items-center justify-center text-4xl bg-[var(--bg-tertiary)] hover:bg-[var(--accent-green)] rounded-lg transition-colors cursor-pointer"
               >
-                {piece === 'q' ? '♛' : piece === 'r' ? '♜' : piece === 'b' ? '♝' : '♞'}
+                <PieceImg piece={piece.toUpperCase()} size="3rem" />
               </button>
             ))}
           </div>
