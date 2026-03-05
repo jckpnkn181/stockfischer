@@ -47,9 +47,21 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,png,svg}'],
-        globIgnores: ['stockfish/**'],
+        globPatterns: ['**/*.{js,css,html,png,svg}', 'stockfish/**/*.{js,wasm}'],
         skipWaiting: true,
+        runtimeCaching: [
+          {
+            urlPattern: /\/stockfish\/.*/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'stockfish-engine',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 2592000,
+              },
+            },
+          },
+        ],
       },
     }),
   ],
