@@ -47,7 +47,7 @@ export default function HomeScreen({
   }
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
+    <div className="flex flex-col h-full w-full overflow-y-auto">
     <div className="flex flex-col flex-1 max-w-lg mx-auto w-full">
       {/* Header */}
       <div className="text-center pt-8 pb-4 px-4">
