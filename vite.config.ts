@@ -51,22 +51,8 @@ export default defineConfig({
         globIgnores: ['stockfish/**'],
         skipWaiting: true,
         maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
-        runtimeCaching: [
-          {
-            urlPattern: /\/stockfish\/.*/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'stockfish-engine',
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 2592000, // 30 days
-              },
-            },
-          },
-        ],
+        navigateFallback: undefined,
+        navigateFallbackDenylist: [/\/stockfish\/.*/],
       },
     }),
   ],
