@@ -161,6 +161,11 @@ export default function Board({
     [isPlayerTurn, onMove, isPromotionMove, legalMoves]
   )
 
+  const handlePieceDrag = useCallback(() => {
+    isDraggingRef.current = true
+    setSelectedSquare(null)
+  }, [])
+
   const handlePromotion = useCallback(
     (piece: string) => {
       if (!promotionMove) return
@@ -184,10 +189,7 @@ export default function Board({
           position: fen,
           boardOrientation: orientation,
           onPieceDrop: handlePieceDrop,
-          onPieceDrag: useCallback(() => {
-            isDraggingRef.current = true
-            setSelectedSquare(null)
-          }, []),
+          onPieceDrag: handlePieceDrag,
           onSquareClick: handleSquareClick,
           squareStyles: customSquareStyles,
           darkSquareStyle: { backgroundColor: '#4d7a9a' },
