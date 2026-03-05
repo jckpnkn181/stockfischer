@@ -17,6 +17,7 @@ export function useGame() {
   const historyRef = useRef<MoveRecord[]>([])
   const initialFenRef = useRef<string>('')
   const uciMovesRef = useRef<string[]>([])
+  const isEngineMovingRef = useRef<boolean>(false)
 
   const { status: engineStatus, isThinking, configure, getMove, stopThinking } = useStockfish()
 
@@ -65,7 +66,9 @@ export function useGame() {
 
   const engineMove = useCallback(async () => {
     if (!posRef.current || !selectedBot) return
+    if (isEngineMovingRef.current) return
 
+    isEngineMovingRef.current = true
     try {
       const bestMove = await getMove(
         initialFenRef.current,
@@ -109,6 +112,8 @@ export function useGame() {
       }
     } catch (err) {
       console.error('Engine move failed:', err)
+    } finally {
+      isEngineMovingRef.current = false
     }
   }, [selectedBot, getMove, updateGameState, checkGameOver])
 
@@ -154,8 +159,10 @@ export function useGame() {
 
       const state = updateGameState()
       if (state && !checkGameOver(state)) {
-        // Trigger engine move
-        setTimeout(() => engineMove(), 100)
+        // Trigger engine move only if not already running
+        if (!isEngineMovingRef.current) {
+          setTimeout(() => engineMove(), 100)
+        }
       }
 
       return true
