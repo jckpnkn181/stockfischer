@@ -47,8 +47,7 @@ export default function HomeScreen({
   }
 
   return (
-    <div className="flex flex-col h-full w-full overflow-y-auto">
-    <div className="flex flex-col flex-1 max-w-lg mx-auto w-full">
+    <div className="flex flex-col h-full w-full max-w-lg mx-auto overflow-y-auto">
       {/* Header */}
       <div className="text-center pt-8 pb-4 px-4">
         <h1 className="text-3xl font-bold text-[var(--text-primary)]">Chess960</h1>
@@ -114,7 +113,6 @@ export default function HomeScreen({
               : 'Spela'}
         </button>
       </div>
-    </div>
     </div>
   )
 }
