@@ -6,6 +6,16 @@ import { useStockfish } from './useStockfish'
 import type { Chess } from 'chessops/chess'
 import { makeSquare } from 'chessops'
 
+/**
+ * Extract a position key from a FEN string by stripping the halfmove clock
+ * and fullmove counter. The resulting key uniquely identifies the board
+ * position, active color, castling rights, and en-passant square, which is
+ * the canonical definition used for threefold-repetition detection.
+ */
+function getPositionKey(fen: string): string {
+  return fen.split(' ').slice(0, 4).join(' ')
+}
+
 export function useGame() {
   const [screen, setScreen] = useState<Screen>('home')
   const [selectedBot, setSelectedBot] = useState<BotConfig | null>(null)
@@ -18,6 +28,7 @@ export function useGame() {
   const initialFenRef = useRef<string>('')
   const uciMovesRef = useRef<string[]>([])
   const isEngineMovingRef = useRef<boolean>(false)
+  const positionCountsRef = useRef<Map<string, number>>(new Map())
 
   const { status: engineStatus, isThinking, configure, getMove, stopThinking } = useStockfish()
 
@@ -35,7 +46,7 @@ export function useGame() {
 
   const checkGameOver = useCallback(
     (state: GameState) => {
-      if (!state.isGameOver || !selectedBot) return false
+      if (!selectedBot) return false
 
       let outcome: GameOutcome
       let reason: GameReason
@@ -46,9 +57,23 @@ export function useGame() {
       } else if (state.isStalemate) {
         outcome = 'draw'
         reason = 'stalemate'
-      } else {
+      } else if (state.isDraw) {
         outcome = 'draw'
         reason = 'insufficient_material'
+      } else {
+        // Check threefold repetition
+        const posKey = getPositionKey(state.fen)
+        const count = positionCountsRef.current.get(posKey) ?? 0
+        if (count >= 3) {
+          outcome = 'draw'
+          reason = 'threefold_repetition'
+        } else if (posRef.current && posRef.current.halfmoves >= 100) {
+          // 50-move rule: 100 half-moves without a pawn move or capture
+          outcome = 'draw'
+          reason = 'fifty_moves'
+        } else {
+          return false
+        }
       }
 
       setGameResult({
@@ -105,6 +130,8 @@ export function useGame() {
         posRef.current = result.pos
         historyRef.current = [...historyRef.current, { san: result.san, uci: result.uci, fen: result.fen }]
         uciMovesRef.current = [...uciMovesRef.current, result.uci]
+        const posKey = getPositionKey(result.fen)
+        positionCountsRef.current.set(posKey, (positionCountsRef.current.get(posKey) ?? 0) + 1)
         const state = updateGameState()
         if (state) checkGameOver(state)
       } else {
@@ -127,6 +154,7 @@ export function useGame() {
       initialFenRef.current = fen
       historyRef.current = []
       uciMovesRef.current = []
+      positionCountsRef.current = new Map([[getPositionKey(fen), 1]])
 
       const pos = createGame(fen)
       posRef.current = pos
@@ -156,6 +184,8 @@ export function useGame() {
       posRef.current = result.pos
       historyRef.current = [...historyRef.current, { san: result.san, uci: result.uci, fen: result.fen }]
       uciMovesRef.current = [...uciMovesRef.current, result.uci]
+      const posKey = getPositionKey(result.fen)
+      positionCountsRef.current.set(posKey, (positionCountsRef.current.get(posKey) ?? 0) + 1)
 
       const state = updateGameState()
       if (state && !checkGameOver(state)) {
@@ -195,6 +225,7 @@ export function useGame() {
     posRef.current = null
     historyRef.current = []
     uciMovesRef.current = []
+    positionCountsRef.current = new Map()
     setGameState(null)
     setGameResult(null)
     setScreen('home')
