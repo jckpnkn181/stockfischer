@@ -36,7 +36,7 @@ export default function ResultScreen({ result, onPlayAgain, onChangeBot }: Resul
       {/* Game Info */}
       <div className="bg-[var(--bg-secondary)] rounded-xl p-4 w-full max-w-sm mb-8">
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-2xl">{result.bot.avatar}</span>
+          <img src={result.bot.avatar} alt={result.bot.name} className="w-10 h-10 rounded-full" />
           <div>
             <span className="font-bold text-[var(--text-primary)]">{result.bot.name}</span>
             <span className="text-xs text-[var(--text-secondary)] ml-2">({result.bot.rating})</span>

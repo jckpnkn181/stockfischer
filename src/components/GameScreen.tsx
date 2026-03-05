@@ -42,7 +42,7 @@ export default function GameScreen({
     <div className="flex flex-col h-full">
       {/* Bot Info */}
       <div className="flex items-center gap-2 px-3 py-2">
-        <span className="text-xl">{bot.avatar}</span>
+        <img src={bot.avatar} alt={bot.name} className="w-8 h-8 rounded-full" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-bold text-sm text-[var(--text-primary)]">{bot.name}</span>

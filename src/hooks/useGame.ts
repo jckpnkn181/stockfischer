@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react'
 import type { Screen, BotConfig, GameState, GameResult, GameOutcome, GameReason, MoveRecord } from '../types'
 import { generateChess960Fen, randomPositionId } from '../chess960/positions'
 import { createGame, makeMove, getGameState } from '../chess960/gameLogic'
+import { getEngineSettings } from '../bots/engineSettings'
 import { useStockfish } from './useStockfish'
 import type { Chess } from 'chessops/chess'
 import { makeSquare } from 'chessops'
@@ -95,11 +96,12 @@ export function useGame() {
 
     isEngineMovingRef.current = true
     try {
+      const settings = getEngineSettings(selectedBot.rating)
       const bestMove = await getMove(
         initialFenRef.current,
         uciMovesRef.current,
-        selectedBot.depth,
-        selectedBot.moveTime
+        settings.depth,
+        settings.moveTime
       )
 
       if (!posRef.current) return
@@ -159,7 +161,8 @@ export function useGame() {
       const pos = createGame(fen)
       posRef.current = pos
 
-      configure(bot.rating, bot.skillLevel)
+      const settings = getEngineSettings(bot.rating)
+      configure(bot.rating, settings.skillLevel)
 
       const state = getGameState(pos, [], id, fen)
       setGameState(state)

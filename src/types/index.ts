@@ -1,14 +1,15 @@
 export type Screen = 'home' | 'game' | 'result'
 
+export type BotCategory =
+  | 'Nybörjare' | 'Medelsvår' | 'Avancerad' | 'Expert'
+  | 'Mästare' | 'Grandmaster' | 'Super Grandmaster' | 'Maximal'
+
 export interface BotConfig {
   id: string
   name: string
   rating: number
-  description: string
+  category: BotCategory
   avatar: string
-  depth: number
-  moveTime: number
-  skillLevel?: number
 }
 
 export interface MoveRecord {

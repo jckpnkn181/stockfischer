@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { BotConfig } from '../types'
 import type { EngineStatus } from '../engine/stockfish'
-import { bots } from '../bots/botConfig'
+import { botsByCategory } from '../bots/botConfig'
 import { randomPositionId } from '../chess960/positions'
 import BotCard from './BotCard'
 
@@ -13,6 +13,8 @@ interface HomeScreenProps {
   onStartGame: (bot: BotConfig, posId: number) => void
   engineStatus: EngineStatus
 }
+
+const categories = botsByCategory()
 
 export default function HomeScreen({
   selectedBot,
@@ -52,15 +54,22 @@ export default function HomeScreen({
         <p className="text-sm text-[var(--text-secondary)] mt-1">Välj motståndare och position</p>
       </div>
 
-      {/* Bot Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 px-4 pb-4">
-        {bots.map((bot) => (
-          <BotCard
-            key={bot.id}
-            bot={bot}
-            selected={selectedBot?.id === bot.id}
-            onSelect={onSelectBot}
-          />
+      {/* Bot Grid by Category */}
+      <div className="px-4 pb-4 space-y-4">
+        {categories.map(({ category, bots }) => (
+          <div key={category}>
+            <h3 className="text-sm font-medium text-[var(--text-secondary)] px-1 mb-2">{category}</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {bots.map((bot) => (
+                <BotCard
+                  key={bot.id}
+                  bot={bot}
+                  selected={selectedBot?.id === bot.id}
+                  onSelect={onSelectBot}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 
