@@ -53,11 +53,11 @@ export default function GameScreen({
         <span className="text-xs text-[var(--text-secondary)]">#{gameState.positionId}</span>
       </div>
 
-      {/* Black captured pieces (pieces white captured) */}
+      {/* Pieces captured by black (white pieces taken) */}
       <CapturedPieces
-        pieces={gameState.capturedPieces.white}
-        color="white"
-        advantage={materialAdvantage.white > 0 ? materialAdvantage.white : undefined}
+        pieces={gameState.capturedPieces.black}
+        color="black"
+        advantage={materialAdvantage.black > 0 ? materialAdvantage.black : undefined}
       />
 
       {/* Board */}
@@ -72,11 +72,11 @@ export default function GameScreen({
         kingSquare={kingSquare}
       />
 
-      {/* White captured pieces (pieces black captured) */}
+      {/* Pieces captured by white (black pieces taken) */}
       <CapturedPieces
-        pieces={gameState.capturedPieces.black}
-        color="black"
-        advantage={materialAdvantage.black > 0 ? materialAdvantage.black : undefined}
+        pieces={gameState.capturedPieces.white}
+        color="white"
+        advantage={materialAdvantage.white > 0 ? materialAdvantage.white : undefined}
       />
 
       {/* Move List */}
