@@ -24,7 +24,7 @@ function App() {
   } = useGame()
 
   return (
-    <>
+    <div className="flex flex-col h-full w-full max-w-lg">
       {screen === 'home' && (
         <HomeScreen
           selectedBot={selectedBot}
@@ -65,7 +65,7 @@ function App() {
       )}
 
       <UpdatePrompt />
-    </>
+    </div>
   )
 }
 
